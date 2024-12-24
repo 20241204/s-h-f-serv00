@@ -244,7 +244,7 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
 {
   "log": {
     "disabled": true,
-    "level": "info",
+    "level": "debug",
     "timestamp": true
   },
   "dns": {
