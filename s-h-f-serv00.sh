@@ -1,5 +1,10 @@
 #!/bin/bash
 
+killMe() {
+    # kill -9 $(ps | grep -v grep | grep sing-box-freebsd | awk '{print $1}')
+    pkill sing-box-freebsd &
+}
+
 # 函数：清理当前端口
 clear_port() {
     # 获取当前端口列表，并去除无关的空行和标题
@@ -160,6 +165,9 @@ downloadAndBuild() {
     cd -
     rm -rf ${FILENAME}.tar.gz ${FILENAME}-${VERSION#v}
 }
+
+# 自杀
+killMe
 
 # 清理端口
 clear_port
