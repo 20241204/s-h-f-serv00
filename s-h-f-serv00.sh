@@ -203,7 +203,7 @@ for ((i=1; i<=hy2_num; i++)); do
   # 使用 Here Document 来生成 JSON 配置
   hy2_config=$(cat <<EOF
 {
-    "tag": "hysteria-in-hy2-${i}",
+    "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}",
     "type": "hysteria2",
     "listen": "${hy2_ip}",
     "listen_port": ${hy2_port},
