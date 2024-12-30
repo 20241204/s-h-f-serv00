@@ -198,9 +198,9 @@ for ((i=1; i<=hy2_num; i++)); do
   echo "端口: ${hy2_port}, IP: ${hy2_ip}, UUID: ${hy2_uuid}"
 
   # 同时生成订阅
-  hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hysteria-in-hy2-${i}"
+  hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}"
 
-  # 使用 Here Document 来生成 JSON 配置
+  # 生成 JSON 配置
   hy2_config=$(cat <<EOF
 {
     "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}",
