@@ -76,7 +76,7 @@ get_ip() {
   local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
 
   # 根据主机名数字部分构造一个主机名列表
-  local hosts=("$hostname" "web${host_number}.serv00.com" "cache${host_number}.serv00.com")
+  local hosts=("web${host_number}.serv00.com" "cache${host_number}.serv00.com" "$hostname")
 
   # 初始化一个空变量来保存最终的 IP 地址
   local final_ip=""
@@ -100,8 +100,8 @@ get_ip() {
       return
     fi
 
-    # 如果 IP 不是 "Accessible"，保存最后一个找到的 IP 地址
-    final_ip=$ip
+    # 如果 IP 不是 "Accessible"，直接输出 "web${host_number}.serv00.com"
+    final_ip="web${host_number}.serv00.com"
   done
 
   # 如果遍历完所有主机名后仍未找到 "Accessible" IP，输出最后一个找到的 IP
