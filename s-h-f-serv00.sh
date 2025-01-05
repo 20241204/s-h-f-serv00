@@ -181,14 +181,13 @@ read -p "请输入要生成的hy2节点个数：" hy2_num
 hy2_nodes=""
 hy2_clients=""
 URL="www.bing.com"
+# 获取 IP 地址
+hy2_ip=$(get_ip)
 # 循环生成端口
 for ((i=1; i<=hy2_num; i++)); do 
   # 添加端口并获取端口号
   add_port udp "hy2-${i}"
   hy2_port=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//' | grep -i hy2-${i} | awk '{print $1}')
-
-  # 获取 IP 地址
-  hy2_ip=$(get_ip)
 
   # 生成 UUID
   hy2_uuid=$(uuidgen -r)
