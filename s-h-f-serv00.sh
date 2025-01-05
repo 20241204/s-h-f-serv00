@@ -313,7 +313,7 @@ echo "节点已经生成！"
 cat <<EOF > clients.txt 
 ${inbounds_clients} 
 EOF
-
+cat clients.txt 
 # 本地 go 构建 sing-box
 downloadAndBuild "SagerNet/sing-box"
 
