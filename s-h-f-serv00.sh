@@ -76,7 +76,7 @@ get_ip() {
   local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
 
   # 根据主机名数字部分构造一个主机名列表
-  local hosts=("cache${host_number}.serv00.com" "web${host_number}.serv00.com" "$hostname")
+  local hosts=("$hostname" "web${host_number}.serv00.com" "cache${host_number}.serv00.com")
 
   # 初始化一个空变量来保存最终的 IP 地址
   local final_ip=""
@@ -175,14 +175,14 @@ clear_port
 # 创建私钥和证书
 make_pc
 
-# 获取用户输入的要生成的 hy2 节点个数
-read -p "请输入要生成的hy2节点个数：" hy2_num
+# 获取 IP 地址
+hy2_ip=$(get_ip)
 
 hy2_nodes=""
 hy2_clients=""
 URL="www.bing.com"
-# 获取 IP 地址
-hy2_ip=$(get_ip)
+# 获取用户输入的要生成的 hy2 节点个数
+read -p "请输入要生成的hy2节点个数：" hy2_num
 # 循环生成端口
 for ((i=1; i<=hy2_num; i++)); do 
   # 添加端口并获取端口号
