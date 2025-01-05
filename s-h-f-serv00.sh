@@ -309,6 +309,10 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
 EOF
 
 echo "config.json 文件已生成！"
+echo "节点已经生成！"
+cat <<EOF > clients.txt 
+${inbounds_clients} 
+EOF
 
 # 本地 go 构建 sing-box
 downloadAndBuild "SagerNet/sing-box"
@@ -316,7 +320,5 @@ downloadAndBuild "SagerNet/sing-box"
 nohup $HOME/sing-box-freebsd run -c ./config.json > $HOME/sing-box-freebsd.log 2>&1 & disown
 echo '运行开始'
   
-cat <<EOF 
-${inbounds_clients} 
-EOF
-echo "节点已经生成！"
+
+
