@@ -314,11 +314,14 @@ cat <<EOF > clients.txt
 ${inbounds_clients} 
 EOF
 cat clients.txt 
-# 本地 go 构建 sing-box
-downloadAndBuild "SagerNet/sing-box"
+if [ -e $HOME/sing-box-freebsd ];then
+  # 本地 go 构建 sing-box
+  echo "$HOME/sing-box-freebsd is exists!"
+else
+  # 本地 go 构建 sing-box
+  downloadAndBuild "SagerNet/sing-box"
+fi
+
 
 nohup $HOME/sing-box-freebsd run -c ./config.json > $HOME/sing-box-freebsd.log 2>&1 & disown
 echo '运行开始'
-  
-
-
