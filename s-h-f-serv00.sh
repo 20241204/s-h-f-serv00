@@ -75,38 +75,37 @@ get_ip() {
   # 从主机名中提取数字部分，例如：从 "s12.serv00.com" 中提取 "12"
   local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
 
-  # 根据主机名数字部分构造一个主机名列表
-  local hosts=("web${host_number}.serv00.com" "cache${host_number}.serv00.com" "$hostname")
+  # 根据主机名数字部分构造一个主机名
+  local hosts="web${host_number}.serv00.com"
 
   # 初始化一个空变量来保存最终的 IP 地址
   local final_ip=""
 
-  # 遍历构造的主机名列表，依次尝试获取 IP
-  for host in "${hosts[@]}"; do
-    # 通过 API 获取主机的 IP 信息
-    local response=$(curl -s "https://ss.botai.us.kg/api/getip?host=$host")
+  case $hosts in
+    "web0.serv00.com") final_ip="128.204.218.48" ;;
+    "web1.serv00.com") final_ip="31.186.83.254" ;;
+    "web2.serv00.com") final_ip="128.204.223.46" ;;
+    "web3.serv00.com") final_ip="128.204.223.70" ;;
+    "web4.serv00.com") final_ip="128.204.223.94" ;;
+    "web5.serv00.com") final_ip="128.204.223.98" ;;
+    "web6.serv00.com") final_ip="128.204.223.100" ;;
+    "web7.serv00.com") final_ip="128.204.223.119" ;;
+    "web8.serv00.com") final_ip="128.204.223.113" ;;
+    "web9.serv00.com") final_ip="128.204.223.115" ;;
+    "web10.serv00.com") final_ip="128.204.223.111" ;;
+    "web11.serv00.com") final_ip="128.204.223.117" ;;
+    "web12.serv00.com") final_ip="85.194.246.69" ;;
+    "web13.serv00.com") final_ip="128.204.223.42" ;;
+    "web14.serv00.com") final_ip="188.68.240.160" ;;
+    "web15.serv00.com") final_ip="65.21.206.15" ;;
+    "web16.serv00.com") final_ip="128.204.218.63" ;;
+    *) final_ip="Domain not found" ;;
+  esac
 
-    # 如果返回的结果包含 "not found"，则跳过当前主机名
-    if [[ "$response" =~ "not found" ]]; then
-      continue
-    fi
-
-    # 从返回的数据中提取 IP 地址（第一个字段），并检查其第二个字段是否为 "Accessible"
-    local ip=$(echo "$response" | awk -F "|" '{ if ($2 == "Accessible") print $1 }')
-
-    # 如果 IP 是 "Accessible"，则输出该 IP 地址并返回
-    if [[ -n "$ip" ]]; then
-      echo "$ip"
-      return
-    fi
-
-    # 如果 IP 不是 "Accessible"，直接输出 $ip
-    final_ip="$ip"
-  done
-
-  # 如果遍历完所有主机名后仍未找到 "Accessible" IP，输出最后一个找到的 IP
+  # 输出 IP 地址
   echo "$final_ip"
 }
+
 
 # 函数：尝试获取网页内容，最多重试5次
 fetchPageContent() {
@@ -177,6 +176,7 @@ make_pc
 
 # 获取 IP 地址
 hy2_ip=$(get_ip)
+echo "The IP address is $hy2_ip"
 
 hy2_nodes=""
 hy2_clients=""
