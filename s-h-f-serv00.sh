@@ -100,8 +100,8 @@ get_ip() {
       return
     fi
 
-    # 如果 IP 不是 "Accessible"，直接输出 "web${host_number}.serv00.com"
-    final_ip="web${host_number}.serv00.com"
+    # 如果 IP 不是 "Accessible"，直接输出 $ip
+    final_ip="$ip"
   done
 
   # 如果遍历完所有主机名后仍未找到 "Accessible" IP，输出最后一个找到的 IP
@@ -255,14 +255,6 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
         "detour": "direct"
       }
     ],
-    "rules": [
-      {
-        "rule_set": [
-          "geosite-category-ads-all"
-        ],
-        "server": "block"
-      }
-    ],
     "final": "google",
     "strategy": "",
     "disable_cache": false,
@@ -286,21 +278,6 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
       {
         "ip_is_private": true,
         "outbound": "direct"
-      },
-      {
-        "rule_set": [
-          "geosite-category-ads-all"
-        ],
-        "action": "reject"
-      }
-    ],
-    "rule_set": [
-      {
-        "tag": "geosite-category-ads-all",
-        "type": "remote",
-        "format": "binary",
-        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs",
-        "download_detour": "direct"
       }
     ],
     "final": "direct"
