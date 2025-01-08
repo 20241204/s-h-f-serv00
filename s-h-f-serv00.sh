@@ -64,7 +64,7 @@ make_pc() {
     # 创建私钥和证书
     if [[ ! -e "private.key" || ! -e "cert.pem" ]]; then
         openssl ecparam -genkey -name prime256v1 -out "private.key"
-        openssl req -new -x509 -days 36500 -key "private.key" -out "cert.pem" -subj "/CN=www.bing.com"
+        openssl req -new -x509 -days 36500 -key "private.key" -out "cert.pem" -subj "/CN=${URL}"
     fi
 }
 
