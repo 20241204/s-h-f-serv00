@@ -60,6 +60,7 @@ add_port() {
 
 # 函数：生成私钥和证书
 make_pc() {
+    local URL=$1
     # 创建私钥和证书
     if [[ ! -e "private.key" || ! -e "cert.pem" ]]; then
         openssl ecparam -genkey -name prime256v1 -out "private.key"
@@ -171,9 +172,6 @@ killMe
 # 清理端口
 clear_port
 
-# 创建私钥和证书
-make_pc
-
 # 获取 IP 地址
 hy2_ip=$(get_ip)
 echo "The IP address is $hy2_ip"
@@ -181,6 +179,10 @@ echo "The IP address is $hy2_ip"
 hy2_nodes=""
 hy2_clients=""
 URL="www.bing.com"
+
+# 创建私钥和证书
+make_pc $URL
+
 # 获取用户输入的要生成的 hy2 节点个数
 read -p "请输入要生成的hy2节点个数：" hy2_num
 # 循环生成端口
