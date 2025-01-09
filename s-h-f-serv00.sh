@@ -23,9 +23,6 @@ nohup ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/sing-box-freebsd run -c ${HOME}/s-h-
     F_DATE="$(TZ=':Asia/Shanghai' date +'%Y-%m-%d %T')"
     F_DATE_S="$(TZ=':Asia/Shanghai' date +%s)"
     # 写入 crontab 自动化，应对服务器自动重启
-    # 查看当前 crontab
-    echo '当前 crontab'
-    crontab -l
 
     cat <<20241204 | tee crontab >/dev/null
 @reboot cd ${HOME}/s-h-f-serv00-${REPORT_DATE_S} ; bash restart.sh
