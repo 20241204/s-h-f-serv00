@@ -390,16 +390,11 @@ EOF
 
 echo "config.json 文件已生成！"
 
+# 本地 go 构建 sing-box
+downloadAndBuild "SagerNet/sing-box"
 
-if [ -e sing-box-freebsd ];then
-  # 本地 go 构建 sing-box
-  echo "sing-box-freebsd is exists!"
-else
-  # 本地 go 构建 sing-box
-  downloadAndBuild "SagerNet/sing-box"
-fi
 make_restart
-nohup $HOME/sing-box-freebsd run -c ./config.json > $HOME/sing-box-freebsd.log 2>&1 & disown
+nohup $HOME/sing-box-freebsd run -c ./config.json > ./sing-box-freebsd.log 2>&1 & disown
 echo '运行开始'
 echo "节点已经生成！"
 cat <<EOF >> result.txt
