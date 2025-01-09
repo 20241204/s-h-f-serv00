@@ -293,7 +293,7 @@ echo "节点已经生成！"
 cat <<EOF > clients.txt 
 ${inbounds_clients} 
 EOF
-cat clients.txt 
+
 if [ -e $HOME/sing-box-freebsd ];then
   # 本地 go 构建 sing-box
   echo "$HOME/sing-box-freebsd is exists!"
@@ -302,6 +302,6 @@ else
   downloadAndBuild "SagerNet/sing-box"
 fi
 
-
+cat clients.txt 
 nohup $HOME/sing-box-freebsd run -c ./config.json > $HOME/sing-box-freebsd.log 2>&1 & disown
 echo '运行开始'
