@@ -257,7 +257,7 @@ echo "=========================================="
 echo 本脚本会根据用户输入端口个数开通1~3个UDP端口，如果有需求，可以自己爆改
 
 # Enables the ability to run your own software
-# devil binexec on
+devil binexec on
 # Set Devil and shell language to English
 devil lang set english
 # Get a list of all available IP addresses owned by Serv00.com
