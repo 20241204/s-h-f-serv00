@@ -394,7 +394,7 @@ echo "config.json 文件已生成！"
 downloadAndBuild "SagerNet/sing-box"
 
 make_restart
-nohup $HOME/sing-box-freebsd run -c ./config.json > ./sing-box-freebsd.log 2>&1 & disown
+nohup ./sing-box-freebsd run -c ./config.json > ./sing-box-freebsd.log 2>&1 & disown
 echo '运行开始'
 echo "节点已经生成！"
 cat <<EOF >> result.txt
