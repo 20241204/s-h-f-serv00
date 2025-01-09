@@ -99,7 +99,8 @@ get_ip() {
     "web13.serv00.com") final_ip="128.204.223.42" ;;
     "web14.serv00.com") final_ip="188.68.240.160" ;;
     "web15.serv00.com") final_ip="188.68.250.201" ;;
-    "web16.serv00.com") final_ip="128.204.218.63" ;;
+    "web16.serv00.com") final_ip="207.180.248.6" ;;
+    "web17.serv00.com") final_ip="128.204.218.63" ;;
     *) final_ip="Domain not found" ;;
   esac
 
