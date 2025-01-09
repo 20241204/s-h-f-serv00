@@ -323,8 +323,8 @@ for ((i=1; i<=hy2_num; i++)); do
     "alpn": [
         "h3"
     ],
-    "certificate_path": "cert.pem",
-    "key_path": "private.key"
+    "certificate_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/cert.pem",
+    "key_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/private.key"
     }
 }
 EOF
