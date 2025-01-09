@@ -10,6 +10,7 @@ make_restart() {
     cat <<20241204 | tee restart.sh >/dev/null
 # kill -9 \$(ps | grep -v grep | grep sing-box-freebsd | awk '{print \$1}')
 pkill sing-box-freebsd &
+sleep 3
 nohup ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/sing-box-freebsd run -c ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/config.json > ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/sing-box-freebsd.log 2>&1 & disown
 20241204
 
