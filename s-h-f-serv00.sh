@@ -243,7 +243,7 @@ downloadAndBuild() {
     tar zxf ${FILENAME}.tar.gz
     cd ${FILENAME}-${VERSION#v}
     go build -tags with_quic ./cmd/${FILENAME}
-    mv -fv ./${FILENAME} ${FILENAME}-$(uname -s | tr A-Z a-z)
+    mv -fv ./${FILENAME} ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${FILENAME}-$(uname -s | tr A-Z a-z)
     chmod -v u+x ${FILENAME}-$(uname -s | tr A-Z a-z)
     cd -
     rm -rf ${FILENAME}.tar.gz ${FILENAME}-${VERSION#v}
