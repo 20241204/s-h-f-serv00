@@ -1,4 +1,89 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
+set -u
+# 起始时间
+REPORT_DATE="$(TZ=':Asia/Shanghai' date +'%Y-%m-%d %T')"
+REPORT_DATE_S="$(TZ=':Asia/Shanghai' date +%s)"
+
+make_restart() {
+    # 写入重启脚本
+    cat <<20241204 | tee restart.sh >/dev/null
+# kill -9 \$(ps | grep -v grep | grep sing-box-freebsd | awk '{print \$1}')
+pkill sing-box-freebsd &
+nohup ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/sing-box-freebsd run -c ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/config.json > ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/sing-box-freebsd.log 2>&1 & disown
+20241204
+
+    # 本机 DOMAIN
+    HOSTNAME_DOMAIN="$(hostname)"
+    USERNAME="$(whoami)"
+
+    # 起始时间+6h
+    #F_DATE="$(date -d '${REPORT_DATE}' --date='6 hour' +'%Y-%m-%d %T')"
+    # 脚本结束时间
+    F_DATE="$(TZ=':Asia/Shanghai' date +'%Y-%m-%d %T')"
+    F_DATE_S="$(TZ=':Asia/Shanghai' date +%s)"
+    # 写入 crontab 自动化，应对服务器自动重启
+    # 查看当前 crontab
+    echo '当前 crontab'
+    crontab -l
+
+    cat <<20241204 | tee crontab >/dev/null
+@reboot cd ${HOME}/s-h-f-serv00-${REPORT_DATE_S} ; bash restart.sh
+$(crontab -l | sed '/s-h-f-serv00.sh/d' | sed "\|@reboot cd ${HOME}/s-h-f-serv00-.* ; bash restart.sh|d")
+20241204
+    crontab crontab
+    rm -fv crontab
+
+    # 检查写入之后的 crontab
+    echo '写入之后的 crontab'
+    crontab -l
+
+    # 写入 result.txt 字符画
+    cat <<'20241204' | tee result.txt >/dev/null
+# ---------------------------------
+
+ .-.  .-.  .-. .  .  .   .-.  .-. .  . 
+(   ):   :(   )|  |.'|  (   ):   :|  | 
+  .' |   |  .' '--|- |    .' |   |'--|-
+ /   :   ; /      |  |   /   :   ;   | 
+'---' `-' '---'   ''---''---' `-'    ' 
+                ,---.                        ,--.,--.            
+,---.   ,---.   |__.    ,---.,---.,---..    ,|  ||  |            
+`---.---|    ---|    ---`---.|---'|     \  / |  ||  |            
+`---'   `---'   `       `---'`---'`      `'  `--'`--'            
+
+# --------------------------------
+
+20241204
+    # 写入 result.txt
+    cat <<20241204 | tee -a result.txt >/dev/null
+    ！！！！！！！！！！！！注意！！！！！！！！！！！！！！！
+    # 有时候？忽然连不上了
+    # 执行以下命令查看进程是否启动？
+    # sing-box-freebsd 进程
+    ps | grep -v grep | grep sing-box-freebsd
+    
+    # 查看一下日志是否有可用信息？
+    # sing-box-freebsd 日志
+    tail -f -n 200 ${HOME}/s-h-f-serv00-*/sing-box-freebsd.log
+    
+    # 如果一切正常有可能 serv00 服务器重新启动了导致 uuid 自动改变了
+    # 可以执行以下命令查看重启后新生成的配置文件信息
+    cat ${HOME}/s-h-f-serv00-*/result.txt
+    
+    # 当然也有进程停止了，那就借用已经存在的文件启动试试重启脚本吧？
+    bash ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/restart.sh
+
+    # 什么还是不行，那就手动重启脚本，再重新编译二进制文件启动吧！！！
+    bash s-h-f-serv00.sh
+    
+    # 啊？什么什么还是不行？啊好烦啊，唉，我尽力了。。。
+    ！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
+
+# 节点信息如下：
+
+20241204
+}
 
 killMe() {
     # kill -9 $(ps | grep -v grep | grep sing-box-freebsd | awk '{print $1}')
@@ -161,11 +246,29 @@ downloadAndBuild() {
     tar zxf ${FILENAME}.tar.gz
     cd ${FILENAME}-${VERSION#v}
     go build -tags with_quic ./cmd/${FILENAME}
-    mv -fv ./${FILENAME} ${HOME}/${FILENAME}-$(uname -s | tr A-Z a-z)
-    chmod -v u+x ${HOME}/${FILENAME}-$(uname -s | tr A-Z a-z)
+    mv -fv ./${FILENAME} ${FILENAME}-$(uname -s | tr A-Z a-z)
+    chmod -v u+x ${FILENAME}-$(uname -s | tr A-Z a-z)
     cd -
     rm -rf ${FILENAME}.tar.gz ${FILENAME}-${VERSION#v}
 }
+
+# 神秘的分割线
+echo "=========================================="
+echo 本脚本会根据用户输入端口个数开通1~3个UDP端口，如果有需求，可以自己爆改
+
+# Enables the ability to run your own software
+devil binexec on
+# Set Devil and shell language to English
+devil lang set english
+# Get a list of all available IP addresses owned by Serv00.com
+devil vhost list public
+# Display the list of reserved ports
+devil port list
+
+# 创建进入自定义目录
+rm -rfv ${HOME}/s-h-f-serv00-*
+mkdir -pv ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
+cd ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
 
 # 自杀
 killMe
@@ -289,19 +392,23 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
 EOF
 
 echo "config.json 文件已生成！"
-echo "节点已经生成！"
-cat <<EOF > clients.txt 
-${inbounds_clients} 
-EOF
 
-if [ -e $HOME/sing-box-freebsd ];then
+
+if [ -e sing-box-freebsd ];then
   # 本地 go 构建 sing-box
-  echo "$HOME/sing-box-freebsd is exists!"
+  echo "sing-box-freebsd is exists!"
 else
   # 本地 go 构建 sing-box
   downloadAndBuild "SagerNet/sing-box"
 fi
-
-cat clients.txt 
+make_restart
 nohup $HOME/sing-box-freebsd run -c ./config.json > $HOME/sing-box-freebsd.log 2>&1 & disown
 echo '运行开始'
+echo "节点已经生成！"
+cat <<EOF >> result.txt
+${inbounds_clients} 
+
+# 本脚本执行耗时:
+"$REPORT_DATE ---> $F_DATE" "Total:$[ $F_DATE_S - $REPORT_DATE_S ] seconds"
+EOF
+cat result.txt
