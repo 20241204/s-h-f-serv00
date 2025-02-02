@@ -180,11 +180,10 @@ add_port() {
 # 删除用户选择的端口
 delete_port () {
     ports=$(devil port list | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
-    port_to_delete=$( echo "$ports" | sed -n "$1p" | awk '{print $1}' )
-    if [[ -n $port_to_delete ]]; then
+    port_to_delete=$( echo "$ports" | sed -n "$1p" | awk '{print $1}' || true)
+    if [[ -n "${port_to_delete:-}" ]]; then
         echo "将要删除的端口是：$port_to_delete"
-        devil port del udp "$port_to_delete"
-        if [[ $? -eq 0 ]]; then
+        if devil port del udp "$port_to_delete"; then
             echo "Port $port_to_delete has been removed successfully"
             return 0
         else
