@@ -5,6 +5,256 @@ set -u
 REPORT_DATE="$(TZ=':Asia/Shanghai' date +'%Y-%m-%d %T')"
 REPORT_DATE_S="$(TZ=':Asia/Shanghai' date +%s)"
 
+killMe() {
+    # kill -9 $(ps | grep -v grep | grep sing-box-freebsd | awk '{print $1}')
+    pkill sing-box-freebsd &
+}
+
+# 函数：清理当前端口
+clear_port() {
+    # 获取当前端口列表，并去除无关的空行和标题
+    port_list=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//')
+
+    # 检查是否有端口信息
+    if [[ -z "$port_list" ]]; then
+        echo "无端口"
+    else
+        # 遍历每一行端口信息
+        while read -r line; do
+            # 提取端口号和端口类型
+            port=$(echo "$line" | awk '{print $1}')
+            port_type=$(echo "$line" | awk '{print $2}')
+            
+            # 删除端口
+            echo "删除端口 $port ($port_type)"
+            devil port del "$port_type" "$port"
+        done <<< "$port_list"
+    fi  
+}
+
+# 函数：获取可用的 IP 地址
+get_ip() {
+  # 获取当前主机的主机名，例如：s12.serv00.com
+  local hostname=$(hostname)
+
+  # 从主机名中提取数字部分，例如：从 "s12.serv00.com" 中提取 "12"
+  local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
+
+  # 根据主机名数字部分构造一个主机名
+  local hosts="web${host_number}.serv00.com"
+
+  # 初始化一个空变量来保存最终的 IP 地址
+  local final_ip=""
+
+  case $hosts in
+    "web0.serv00.com") final_ip="128.204.218.48" ;;
+    "web1.serv00.com") final_ip="31.186.83.254" ;;
+    "web2.serv00.com") final_ip="128.204.223.46" ;;
+    "web3.serv00.com") final_ip="128.204.223.70" ;;
+    "web4.serv00.com") final_ip="128.204.223.94" ;;
+    "web5.serv00.com") final_ip="128.204.223.98" ;;
+    "web6.serv00.com") final_ip="128.204.223.100" ;;
+    "web7.serv00.com") final_ip="128.204.223.119" ;;
+    "web8.serv00.com") final_ip="128.204.223.113" ;;
+    "web9.serv00.com") final_ip="128.204.223.115" ;;
+    "web10.serv00.com") final_ip="128.204.223.111" ;;
+    "web11.serv00.com") final_ip="128.204.223.117" ;;
+    "web12.serv00.com") final_ip="85.194.246.69" ;;
+    "web13.serv00.com") final_ip="128.204.223.42" ;;
+    "web14.serv00.com") final_ip="188.68.240.160" ;;
+    "web15.serv00.com") final_ip="188.68.250.201" ;;
+    "web16.serv00.com") final_ip="207.180.248.6" ;;
+    "web17.serv00.com") final_ip="128.204.218.63" ;;
+    *) final_ip="Domain not found" ;;
+  esac
+
+  # 输出 IP 地址
+  echo "$final_ip"
+}
+
+# 函数：生成私钥和证书
+make_pc() {
+    local URL=$1
+    # 创建私钥和证书
+    if [[ ! -e "private.key" || ! -e "cert.pem" ]]; then
+        openssl ecparam -genkey -name prime256v1 -out "private.key"
+        openssl req -new -x509 -days 36500 -key "private.key" -out "cert.pem" -subj "/CN=${URL}"
+    fi
+}
+
+# 统计当前端口数量并记录每个端口的类型和端口号
+list_ports () {
+    echo "Num Type Port Description"
+    i=1
+    ports=$(devil port list | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
+    num_ports=0
+    while IFS= read -r line; do
+        [[ $line =~ ^[0-9]+ ]] && echo "$i $line" && i=$((i+1)) && num_ports=$((num_ports+1))
+    done <<< "$ports"
+    return $num_ports
+}
+
+# 生成随机端口
+generate_random_ports () {
+    # 循环生成端口
+    for ((i=1; i<=$1; i++)); do 
+      # 添加端口并获取端口号
+      #add_port udp "hy2-${i}"
+      hy2_port=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//' | grep -i hy2-${i} | awk '{print $1}')
+
+      # 生成 UUID
+      hy2_uuid=$(uuidgen -r)
+
+      # 输出生成的结果
+      echo "生成第 $i 个节点: hy2-${i}"
+      echo "端口: ${hy2_port}, IP: ${hy2_ip}, UUID: ${hy2_uuid}"
+
+      # 同时生成订阅
+      hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}"
+
+      # 生成 JSON 配置
+      hy2_config=$(cat <<EOF
+{
+    "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}",
+    "type": "hysteria2",
+    "listen": "${hy2_ip}",
+    "listen_port": ${hy2_port},
+    "users": [
+    {
+        "password": "${hy2_uuid}"
+    }
+    ],
+    "masquerade": {
+    "url": "https://${URL}",
+    "type": "proxy"
+    },
+    "tls": {
+    "enabled": true,
+    "alpn": [
+        "h3"
+    ],
+    "certificate_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/cert.pem",
+    "key_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/private.key"
+    }
+}
+EOF
+)
+      # 存储节点配置
+      hy2_nodes+=("$hy2_config")
+      hy2_clients+=("$hy2_client")
+
+    done
+}
+
+# 函数：添加端口
+add_port() {
+  local protocol=$1
+  local description=$2
+
+  # 验证协议类型
+  if [[ "$protocol" != "udp" && "$protocol" != "tcp" ]]; then
+    echo "[Error] Invalid port type. Please use 'udp' or 'tcp'."
+    return 1
+  fi
+
+  # 如果端口不存在，尝试添加端口
+  echo "生成随机端口协议: $protocol，描述: $description"
+  result=$(devil port add "$protocol" random "$description" 2>&1)
+
+  # 检查命令执行结果
+  if [[ "$result" == *"Error"* ]]; then
+    echo "[Error] $result"
+    # 如果遇到端口限制错误，给出提示
+    if [[ "$result" == *"Port limit exceeded"* ]]; then
+      echo "[Error] 端口限制已达到，无法继续添加端口！"
+    fi
+    return 1
+  else
+    # 提取端口号
+    local port=$(echo "$result" | awk -F ' ' '{print $5}')
+    echo "[Ok] Port reserved successfully: $port"
+    echo "$port"
+  fi
+}
+
+# 删除用户选择的端口
+delete_port () {
+    ports=$(devil port list | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
+    port_to_delete=$( echo "$ports" | sed -n "$1p" | awk '{print $1}' )
+    if [[ -n $port_to_delete ]]; then
+        echo "将要删除的端口是：$port_to_delete"
+        devil port del udp "$port_to_delete"
+        if [[ $? -eq 0 ]]; then
+            echo "Port $port_to_delete has been removed successfully"
+            return 0
+        else
+            echo "[Error] Failed to remove port $port_to_delete"
+            return 1
+        fi
+    else
+        echo "[Error] Invalid port number"
+        return 1
+    fi
+}
+
+# 函数：尝试获取网页内容，最多重试5次
+fetchPageContent() {
+    local GITHUB_URI=$1
+    local PAGE_CONTENT=""
+    for i in {1..5}; do
+        PAGE_CONTENT=$(curl -sL ${GITHUB_URI})
+        if [ -n "${PAGE_CONTENT}" ]; then
+            break
+        fi
+        echo "尝试获取网页内容失败，重试第 $i 次..."
+        sleep 2
+    done
+    echo "${PAGE_CONTENT}"
+}
+
+# 函数：确保成功获取到网页内容
+ensurePageContent() {
+    local PAGE_CONTENT=$1
+    if [ -z "${PAGE_CONTENT}" ]; then
+        echo "无法获取网页内容，请稍后再试。"
+        exit 1
+    fi
+}
+
+# 下载 sing-box-freebsd 配置并启用
+downloadAndBuild() {
+    local URI=$1
+    local GITHUB_URI="https://github.com/${URI}"
+    local TAG_URI="/${URI}/releases/tag/"
+
+    PAGE_CONTENT=$(fetchPageContent ${GITHUB_URI}/releases)
+    ensurePageContent "${PAGE_CONTENT}"
+
+    # 提取最新版本号
+    VERSION=$(echo "${PAGE_CONTENT}" | grep -o "href=\"${TAG_URI}[^\"]*" | head -n 1 | sed "s;href=\"${TAG_URI};;" | sed 's/\"//g')
+    echo ${VERSION}
+
+    # 下载并编译
+    FILENAME=$(basename ${GITHUB_URI})
+    FULL_URL=${GITHUB_URI}/archive/refs/tags/${VERSION}.tar.gz
+    echo "${FULL_URL}"
+    
+    # 确保下载链接存在
+    if [ -z "${FULL_URL}" ]; then
+        echo "无法找到匹配的下载链接，请稍后再试。"
+        exit 1
+    fi
+    
+    wget -t 3 -T 10 --verbose --show-progress=on --progress=bar --no-check-certificate --hsts-file=/tmp/wget-hsts -c "${FULL_URL}" -O ${FILENAME}.tar.gz
+    tar zxf ${FILENAME}.tar.gz
+    cd ${FILENAME}-${VERSION#v}
+    go build -tags with_quic ./cmd/${FILENAME}
+    mv -fv ./${FILENAME} ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${FILENAME}-$(uname -s | tr A-Z a-z)
+    chmod -v u+x ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${FILENAME}-$(uname -s | tr A-Z a-z)
+    cd -
+    rm -rf ${FILENAME}.tar.gz ${FILENAME}-${VERSION#v}
+}
+
 make_restart() {
     # 写入重启脚本
     cat <<20241204 | tee restart.sh >/dev/null
@@ -84,173 +334,6 @@ $(crontab -l | sed '/s-h-f-serv00.sh/d' | sed "\|@reboot cd ${HOME}/s-h-f-serv00
 20241204
 }
 
-killMe() {
-    # kill -9 $(ps | grep -v grep | grep sing-box-freebsd | awk '{print $1}')
-    pkill sing-box-freebsd &
-}
-
-# 函数：清理当前端口
-clear_port() {
-    # 获取当前端口列表，并去除无关的空行和标题
-    port_list=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//')
-
-    # 检查是否有端口信息
-    if [[ -z "$port_list" ]]; then
-        echo "无端口"
-    else
-        # 遍历每一行端口信息
-        while read -r line; do
-            # 提取端口号和端口类型
-            port=$(echo "$line" | awk '{print $1}')
-            port_type=$(echo "$line" | awk '{print $2}')
-            
-            # 删除端口
-            echo "删除端口 $port ($port_type)"
-            devil port del "$port_type" "$port"
-        done <<< "$port_list"
-    fi  
-}
-
-# 函数：添加端口
-add_port() {
-  local protocol=$1
-  local description=$2
-
-  # 验证协议类型
-  if [[ "$protocol" != "udp" && "$protocol" != "tcp" ]]; then
-    echo "[Error] Invalid port type. Please use 'udp' or 'tcp'."
-    return 1
-  fi
-
-  # 如果端口不存在，尝试添加端口
-  echo "生成随机端口协议: $protocol，描述: $description"
-  result=$(devil port add "$protocol" random "$description" 2>&1)
-
-  # 检查命令执行结果
-  if [[ "$result" == *"Error"* ]]; then
-    echo "[Error] $result"
-    # 如果遇到端口限制错误，给出提示
-    if [[ "$result" == *"Port limit exceeded"* ]]; then
-      echo "[Error] 端口限制已达到，无法继续添加端口！"
-    fi
-    return 1
-  else
-    # 提取端口号
-    local port=$(echo "$result" | awk -F ' ' '{print $5}')
-    echo "[Ok] Port reserved successfully: $port"
-    echo "$port"
-  fi
-}
-
-# 函数：生成私钥和证书
-make_pc() {
-    local URL=$1
-    # 创建私钥和证书
-    if [[ ! -e "private.key" || ! -e "cert.pem" ]]; then
-        openssl ecparam -genkey -name prime256v1 -out "private.key"
-        openssl req -new -x509 -days 36500 -key "private.key" -out "cert.pem" -subj "/CN=${URL}"
-    fi
-}
-
-# 函数：获取可用的 IP 地址
-get_ip() {
-  # 获取当前主机的主机名，例如：s12.serv00.com
-  local hostname=$(hostname)
-
-  # 从主机名中提取数字部分，例如：从 "s12.serv00.com" 中提取 "12"
-  local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
-
-  # 根据主机名数字部分构造一个主机名
-  local hosts="web${host_number}.serv00.com"
-
-  # 初始化一个空变量来保存最终的 IP 地址
-  local final_ip=""
-
-  case $hosts in
-    "web0.serv00.com") final_ip="128.204.218.48" ;;
-    "web1.serv00.com") final_ip="31.186.83.254" ;;
-    "web2.serv00.com") final_ip="128.204.223.46" ;;
-    "web3.serv00.com") final_ip="128.204.223.70" ;;
-    "web4.serv00.com") final_ip="128.204.223.94" ;;
-    "web5.serv00.com") final_ip="128.204.223.98" ;;
-    "web6.serv00.com") final_ip="128.204.223.100" ;;
-    "web7.serv00.com") final_ip="128.204.223.119" ;;
-    "web8.serv00.com") final_ip="128.204.223.113" ;;
-    "web9.serv00.com") final_ip="128.204.223.115" ;;
-    "web10.serv00.com") final_ip="128.204.223.111" ;;
-    "web11.serv00.com") final_ip="128.204.223.117" ;;
-    "web12.serv00.com") final_ip="85.194.246.69" ;;
-    "web13.serv00.com") final_ip="128.204.223.42" ;;
-    "web14.serv00.com") final_ip="188.68.240.160" ;;
-    "web15.serv00.com") final_ip="188.68.250.201" ;;
-    "web16.serv00.com") final_ip="207.180.248.6" ;;
-    "web17.serv00.com") final_ip="128.204.218.63" ;;
-    *) final_ip="Domain not found" ;;
-  esac
-
-  # 输出 IP 地址
-  echo "$final_ip"
-}
-
-
-# 函数：尝试获取网页内容，最多重试5次
-fetchPageContent() {
-    local GITHUB_URI=$1
-    local PAGE_CONTENT=""
-    for i in {1..5}; do
-        PAGE_CONTENT=$(curl -sL ${GITHUB_URI})
-        if [ -n "${PAGE_CONTENT}" ]; then
-            break
-        fi
-        echo "尝试获取网页内容失败，重试第 $i 次..."
-        sleep 2
-    done
-    echo "${PAGE_CONTENT}"
-}
-
-# 函数：确保成功获取到网页内容
-ensurePageContent() {
-    local PAGE_CONTENT=$1
-    if [ -z "${PAGE_CONTENT}" ]; then
-        echo "无法获取网页内容，请稍后再试。"
-        exit 1
-    fi
-}
-
-# 下载 sing-box-freebsd 配置并启用
-downloadAndBuild() {
-    local URI=$1
-    local GITHUB_URI="https://github.com/${URI}"
-    local TAG_URI="/${URI}/releases/tag/"
-
-    PAGE_CONTENT=$(fetchPageContent ${GITHUB_URI}/releases)
-    ensurePageContent "${PAGE_CONTENT}"
-
-    # 提取最新版本号
-    VERSION=$(echo "${PAGE_CONTENT}" | grep -o "href=\"${TAG_URI}[^\"]*" | head -n 1 | sed "s;href=\"${TAG_URI};;" | sed 's/\"//g')
-    echo ${VERSION}
-
-    # 下载并编译
-    FILENAME=$(basename ${GITHUB_URI})
-    FULL_URL=${GITHUB_URI}/archive/refs/tags/${VERSION}.tar.gz
-    echo "${FULL_URL}"
-    
-    # 确保下载链接存在
-    if [ -z "${FULL_URL}" ]; then
-        echo "无法找到匹配的下载链接，请稍后再试。"
-        exit 1
-    fi
-    
-    wget -t 3 -T 10 --verbose --show-progress=on --progress=bar --no-check-certificate --hsts-file=/tmp/wget-hsts -c "${FULL_URL}" -O ${FILENAME}.tar.gz
-    tar zxf ${FILENAME}.tar.gz
-    cd ${FILENAME}-${VERSION#v}
-    go build -tags with_quic ./cmd/${FILENAME}
-    mv -fv ./${FILENAME} ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${FILENAME}-$(uname -s | tr A-Z a-z)
-    chmod -v u+x ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${FILENAME}-$(uname -s | tr A-Z a-z)
-    cd -
-    rm -rf ${FILENAME}.tar.gz ${FILENAME}-${VERSION#v}
-}
-
 # 神秘的分割线
 echo "=========================================="
 echo 本脚本会根据用户输入端口个数开通1~3个UDP端口，如果有需求，可以自己爆改
@@ -273,7 +356,7 @@ cd ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
 killMe
 
 # 清理端口
-clear_port
+#clear_port
 
 # 获取 IP 地址
 hy2_ip=$(get_ip)
@@ -287,55 +370,35 @@ URL="www.bing.com"
 make_pc $URL
 
 # 获取用户输入的要生成的 hy2 节点个数
-read -p "请输入要生成的hy2节点个数：" hy2_num
-# 循环生成端口
-for ((i=1; i<=hy2_num; i++)); do 
-  # 添加端口并获取端口号
-  add_port udp "hy2-${i}"
-  hy2_port=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//' | grep -i hy2-${i} | awk '{print $1}')
+#read -p "请输入要生成的hy2节点个数：" hy2_num
 
-  # 生成 UUID
-  hy2_uuid=$(uuidgen -r)
+# 脚本主体
+count=0
+num_ports=$(list_ports)
+num_ports=$?
+if [ "$num_ports" -lt 3 ]; then
+    count=$((3-num_ports))
+    generate_random_ports "$count"
+else
+    while true; do
+        list_ports
+        read -p "请输入要删除的端口编号（输入y退出）： " num
+        if [[ $num =~ ^[0-9]+$ ]]; then
+            if delete_port "$num"; then
+                count=$((count+1))
+            fi
+        elif [[ $num == "y" ]]; then
+            break
+        else
+            echo "无效输入，请输入端口编号或y"
+        fi
+    done
+    # 根据删除的次数生成随机端口
+    generate_random_ports "$count"
+fi
 
-  # 输出生成的结果
-  echo "生成第 $i 个节点: hy2-${i}"
-  echo "端口: ${hy2_port}, IP: ${hy2_ip}, UUID: ${hy2_uuid}"
-
-  # 同时生成订阅
-  hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}"
-
-  # 生成 JSON 配置
-  hy2_config=$(cat <<EOF
-{
-    "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}",
-    "type": "hysteria2",
-    "listen": "${hy2_ip}",
-    "listen_port": ${hy2_port},
-    "users": [
-    {
-        "password": "${hy2_uuid}"
-    }
-    ],
-    "masquerade": {
-    "url": "https://${URL}",
-    "type": "proxy"
-    },
-    "tls": {
-    "enabled": true,
-    "alpn": [
-        "h3"
-    ],
-    "certificate_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/cert.pem",
-    "key_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/private.key"
-    }
-}
-EOF
-)
-  # 存储节点配置
-  hy2_nodes+=("$hy2_config")
-  hy2_clients+=("$hy2_client")
-
-done
+echo "共生成了 $count 个随机端口"
+list_ports
 
 # 拼接多个节点配置并生成 config.json
 inbounds=$(printf ",\n%s" "${hy2_nodes[@]}")
