@@ -1,9 +1,38 @@
 #!/usr/bin/env bash
 set -e
 set -u
+# set -x # 启用调试模式
+# 日志文件路径
+LOGFILE="script_log.txt"
+
+# 定义全局变量
+num_ports=0
+
 # 起始时间
 REPORT_DATE="$(TZ=':Asia/Shanghai' date +'%Y-%m-%d %T')"
 REPORT_DATE_S="$(TZ=':Asia/Shanghai' date +%s)"
+
+
+# Enables the ability to run your own software
+devil binexec on
+# Set Devil and shell language to English
+devil lang set english
+# Get a list of all available IP addresses owned by Serv00.com
+devil vhost list public
+# Display the list of reserved ports
+devil port list
+
+# 创建进入自定义目录
+rm -rfv ${HOME}/s-h-f-serv00-*
+mkdir -pv ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
+cd ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
+
+hy2_nodes=""
+hy2_clients=""
+URL="www.bing.com"
+
+# 获取用户输入的要生成的 hy2 节点个数
+#read -p "请输入要生成的hy2节点个数：" hy2_num
 
 killMe() {
     # kill -9 $(ps | grep -v grep | grep sing-box-freebsd | awk '{print $1}')
@@ -84,22 +113,24 @@ make_pc() {
 
 # 统计当前端口数量并记录每个端口的类型和端口号
 list_ports () {
-    echo "Num Type Port Description"
+    echo "列出当前端口..." | tee -a "$LOGFILE"
+    echo "Num Type Port Description" | tee -a "$LOGFILE"
     i=1
-    ports=$(devil port list | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
+    ports=$(devil port list 2>>"$LOGFILE" | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
     num_ports=0
     while IFS= read -r line; do
-        [[ $line =~ ^[0-9]+ ]] && echo "$i $line" && i=$((i+1)) && num_ports=$((num_ports+1))
+        [[ $line =~ ^[0-9]+ ]] && echo "$i $line" | tee -a "$LOGFILE" && i=$((i+1)) && num_ports=$((num_ports+1))
     done <<< "$ports"
-    return $num_ports
+    echo "端口数量: $num_ports" | tee -a "$LOGFILE"
 }
 
 # 生成随机端口
 generate_random_ports () {
+    echo "生成随机端口..." | tee -a "$LOGFILE"
     # 循环生成端口
     for ((i=1; i<=$1; i++)); do 
       # 添加端口并获取端口号
-      #add_port udp "hy2-${i}"
+      add_port udp "hy2-${i}"
       hy2_port=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//' | grep -i hy2-${i} | awk '{print $1}')
 
       # 生成 UUID
@@ -179,19 +210,20 @@ add_port() {
 
 # 删除用户选择的端口
 delete_port () {
-    ports=$(devil port list | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
+    echo "尝试删除端口..." | tee -a "$LOGFILE"
+    ports=$(devil port list 2>>"$LOGFILE" | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
     port_to_delete=$( echo "$ports" | sed -n "$1p" | awk '{print $1}' || true)
     if [[ -n "${port_to_delete:-}" ]]; then
-        echo "将要删除的端口是：$port_to_delete"
-        if devil port del udp "$port_to_delete"; then
-            echo "Port $port_to_delete has been removed successfully"
+        echo "将要删除的端口是：$port_to_delete" | tee -a "$LOGFILE"
+        if devil port del udp "$port_to_delete" 2>>"$LOGFILE"; then
+            echo "Port $port_to_delete has been removed successfully" | tee -a "$LOGFILE"
             return 0
         else
-            echo "[Error] Failed to remove port $port_to_delete"
+            echo "[Error] Failed to remove port $port_to_delete" | tee -a "$LOGFILE"
             return 1
         fi
     else
-        echo "[Error] Invalid port number"
+        echo "[Error] Invalid port number" | tee -a "$LOGFILE"
         return 1
     fi
 }
@@ -335,21 +367,7 @@ $(crontab -l | sed '/s-h-f-serv00.sh/d' | sed "\|@reboot cd ${HOME}/s-h-f-serv00
 
 # 神秘的分割线
 echo "=========================================="
-echo 本脚本会根据用户输入端口个数开通1~3个UDP端口，如果有需求，可以自己爆改
-
-# Enables the ability to run your own software
-devil binexec on
-# Set Devil and shell language to English
-devil lang set english
-# Get a list of all available IP addresses owned by Serv00.com
-devil vhost list public
-# Display the list of reserved ports
-devil port list
-
-# 创建进入自定义目录
-rm -rfv ${HOME}/s-h-f-serv00-*
-mkdir -pv ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
-cd ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/
+echo 本脚本会根据用户删除端口个数开通1~3个UDP端口，如果有需求，可以自己爆改
 
 # 自杀
 killMe
@@ -361,22 +379,17 @@ killMe
 hy2_ip=$(get_ip)
 echo "The IP address is $hy2_ip"
 
-hy2_nodes=""
-hy2_clients=""
-URL="www.bing.com"
-
 # 创建私钥和证书
 make_pc $URL
 
-# 获取用户输入的要生成的 hy2 节点个数
-#read -p "请输入要生成的hy2节点个数：" hy2_num
-
 # 脚本主体
+echo "脚本开始执行..." | tee -a "$LOGFILE"
 count=0
-num_ports=$(list_ports)
-num_ports=$?
+list_ports
+echo "当前端口数量: $num_ports" | tee -a "$LOGFILE"
 if [ "$num_ports" -lt 3 ]; then
     count=$((3-num_ports))
+    echo "生成 $count 个随机端口..." | tee -a "$LOGFILE"
     generate_random_ports "$count"
 else
     while true; do
@@ -393,11 +406,13 @@ else
         fi
     done
     # 根据删除的次数生成随机端口
+    echo "生成 $count 个随机端口..." | tee -a "$LOGFILE"
     generate_random_ports "$count"
 fi
 
-echo "共生成了 $count 个随机端口"
+echo "共生成了 $count 个随机端口" | tee -a "$LOGFILE"
 list_ports
+echo "脚本执行完成。" | tee -a "$LOGFILE"
 
 # 拼接多个节点配置并生成 config.json
 inbounds=$(printf ",\n%s" "${hy2_nodes[@]}")
