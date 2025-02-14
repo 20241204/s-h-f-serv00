@@ -316,8 +316,8 @@ downloadAndExtract() {
     fi
 
     # 下载并解压
-    wget -t 3 -T 10 --verbose --show-progress=on --progress=bar --no-check-certificate --hsts-file=/tmp/wget-hsts -c "${FULL_URL}" -O ${HOME}/s-c-f-serv00-${REPORT_DATE_S}/${APPNAME}-$(uname -s | tr A-Z a-z)
-    chmod -v u+x ${HOME}/s-c-f-serv00-${REPORT_DATE_S}/${APPNAME}-$(uname -s | tr A-Z a-z)
+    wget -t 3 -T 10 --verbose --show-progress=on --progress=bar --no-check-certificate --hsts-file=/tmp/wget-hsts -c "${FULL_URL}" -O ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${APPNAME}-$(uname -s | tr A-Z a-z)
+    chmod -v u+x ${HOME}/s-h-f-serv00-${REPORT_DATE_S}/${APPNAME}-$(uname -s | tr A-Z a-z)
 }
 
 make_restart() {
