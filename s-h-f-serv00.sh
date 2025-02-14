@@ -116,7 +116,7 @@ list_ports () {
     echo "列出当前端口..." | tee -a "$LOGFILE"
     echo "Num Type Port Description" | tee -a "$LOGFILE"
     i=1
-    ports=$(devil port list 2>>"$LOGFILE" | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
+    ports=$(devil port list 2>>"$LOGFILE" | tail -n +2 | awk '{if ($2 == "udp" || $2 == "tcp") print $1, $2, $3}' )
     num_ports=0
     while IFS= read -r line; do
         [[ $line =~ ^[0-9]+ ]] && echo "$i $line" | tee -a "$LOGFILE" && i=$((i+1)) && num_ports=$((num_ports+1))
@@ -211,7 +211,7 @@ add_port() {
 # 删除用户选择的端口
 delete_port () {
     echo "尝试删除端口..." | tee -a "$LOGFILE"
-    ports=$(devil port list 2>>"$LOGFILE" | tail -n +2 | awk '{if ($2 == "udp") print $1, $2, $3}' )
+    ports=$(devil port list 2>>"$LOGFILE" | tail -n +2 | awk '{if ($2 == "udp" || $2 == "tcp") print $1, $2, $3}' )
     port_to_delete=$( echo "$ports" | sed -n "$1p" | awk '{print $1}' || true)
     if [[ -n "${port_to_delete:-}" ]]; then
         echo "将要删除的端口是：$port_to_delete" | tee -a "$LOGFILE"
