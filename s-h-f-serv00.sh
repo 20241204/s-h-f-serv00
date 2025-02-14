@@ -286,6 +286,37 @@ downloadAndBuild() {
     rm -rf ${FILENAME}.tar.gz ${FILENAME}-${VERSION#v}
 }
 
+# 方案2 直接下载 非官方 sing-box 的 freebsd 编译成品，我本来是担心风险的，但是现在来看不得不用了
+downloadAndExtract() {
+    local URI=$1
+    local APPNAME=$2
+    local GITHUB_URI="https://github.com/${URI}"
+    local TAG_URI="/${URI}/releases/tag/"
+
+    PAGE_CONTENT=$(fetchPageContent ${GITHUB_URI}/releases)
+    ensurePageContent "${PAGE_CONTENT}"
+
+    # 提取最新版本号
+    VERSION=$(echo "${PAGE_CONTENT}" | grep -o "href=\"${TAG_URI}[^\"]*" | head -n 1 | sed "s;href=\"${TAG_URI};;" | sed 's/\"//g')
+    echo ${VERSION}
+
+    # 下载并编译
+    FILENAME=$(basename ${GITHUB_URI})
+    #FULL_URL=${GITHUB_URI}/releases/download/${VERSION}/${APPNAME}-$(uname -s | tr A-Z a-z)-$(uname -m)
+    FULL_URL=${GITHUB_URI}/releases/download/${VERSION}/${FILENAME}-$(uname -m)
+    echo "${FULL_URL}"
+    
+    # 确保下载链接存在
+    if [ -z "${FULL_URL}" ]; then
+        echo "无法找到匹配的下载链接，请稍后再试。"
+        exit 1
+    fi
+
+    # 下载并解压
+    wget -t 3 -T 10 --verbose --show-progress=on --progress=bar --no-check-certificate --hsts-file=/tmp/wget-hsts -c "${FULL_URL}" -O ${HOME}/s-c-f-serv00-${REPORT_DATE_S}/${APPNAME}-$(uname -s | tr A-Z a-z)
+    chmod -v u+x ${HOME}/s-c-f-serv00-${REPORT_DATE_S}/${APPNAME}-$(uname -s | tr A-Z a-z)
+}
+
 make_restart() {
     # 写入重启脚本
     cat <<20241204 | tee restart.sh >/dev/null
@@ -470,7 +501,10 @@ EOF
 echo "config.json 文件已生成！"
 
 # 本地 go 构建 sing-box
-downloadAndBuild "SagerNet/sing-box"
+#downloadAndBuild "SagerNet/sing-box"
+
+# 方案2 直接下载 非官方 sing-box freebsd 编译成品，我本来是担心风险的，但是现在来看不得不用了
+downloadAndExtract "20241204/sing-box-freebsd" "sing-box"
 
 make_restart
 nohup ./sing-box-freebsd run -c ./config.json > ./sing-box-freebsd.log 2>&1 & disown
