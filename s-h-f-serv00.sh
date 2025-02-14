@@ -218,6 +218,9 @@ delete_port () {
         if devil port del udp "$port_to_delete" 2>>"$LOGFILE"; then
             echo "Port $port_to_delete has been removed successfully" | tee -a "$LOGFILE"
             return 0
+        elif devil port del tcp "$port_to_delete" 2>>"$LOGFILE"; then
+            echo "Port $port_to_delete has been removed successfully" | tee -a "$LOGFILE"
+            return 0
         else
             echo "[Error] Failed to remove port $port_to_delete" | tee -a "$LOGFILE"
             return 1
