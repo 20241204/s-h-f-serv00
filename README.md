@@ -1,5 +1,5 @@
 # s-h-f-serv00
-sing-box + hysteria2 + freebsd 支持在 serv00 上搭建 ~ 3 ~9 个 hysteria2 节点
+sing-box + hysteria2 + freebsd 支持在 serv00 上搭建 9 个 hysteria2 节点
 
 ![Watchers](https://img.shields.io/github/watchers/20241204/s-h-f-serv00) ![Stars](https://img.shields.io/github/stars/20241204/s-h-f-serv00) ![Forks](https://img.shields.io/github/forks/20241204/s-h-f-serv00) ![Vistors](https://visitor-badge.laobi.icu/badge?page_id=20241204.s-h-f-serv00) ![LICENSE](https://img.shields.io/badge/license-CC%20BY--SA%204.0-green.svg)
 <a href="https://star-history.com/#20241204/s-h-f-serv00&Date">
