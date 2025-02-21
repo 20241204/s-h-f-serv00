@@ -27,8 +27,9 @@ sing-box + hysteria2 + freebsd 支持在 serv00 上搭建 3 个 hysteria2 节点
     bash ${HOME}/s-h-f-serv00.sh
 
 ![image](https://github.com/user-attachments/assets/63bfd760-c700-4f5a-8d16-3362bf92bd28)
-![image](https://github.com/user-attachments/assets/f8ed787f-0527-421e-9c0e-493c3ba74349)
 
+## 新增 3IP 3端口 9节点
+![Screenshot 2025-02-21 at 19 56 52](https://github.com/user-attachments/assets/d88cbbfb-80d9-481e-84a2-7afa922469c8)
 
 
 # 声明
