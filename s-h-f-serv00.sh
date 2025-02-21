@@ -465,8 +465,8 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
     "servers": [
       {
         "tag": "google",
-        "address": "tls://8.8.8.8",
-        "strategy": "ipv4_only",
+        "type": "tls",
+        "server": "8.8.8.8",
         "detour": "direct"
       }
     ],
