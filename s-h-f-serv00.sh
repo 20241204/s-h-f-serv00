@@ -61,8 +61,8 @@ clear_port() {
     fi  
 }
 
-# 函数：获取可用的 IP 地址
-get_ip() {
+# 函数：获取可用的 IP 地址数组
+get_ips() {
   # 获取当前主机的主机名，例如：s12.serv00.com
   local hostname=$(hostname)
 
@@ -70,35 +70,34 @@ get_ip() {
   local host_number=$(echo "$hostname" | awk -F'[s.]' '{print $2}')
 
   # 根据主机名数字部分构造一个主机名
-  local hosts="web${host_number}.serv00.com"
+  local hosts="${host_number}.serv00.com"
 
-  # 初始化一个空变量来保存最终的 IP 地址
-  local final_ip=""
+  # 初始化一个数组来保存最终的 IP 地址
+  local final_ips=()
 
   case $hosts in
-    "web0.serv00.com") final_ip="128.204.218.48" ;;
-    "web1.serv00.com") final_ip="31.186.83.254" ;;
-    "web2.serv00.com") final_ip="128.204.223.46" ;;
-    "web3.serv00.com") final_ip="128.204.223.70" ;;
-    "web4.serv00.com") final_ip="128.204.223.94" ;;
-    "web5.serv00.com") final_ip="128.204.223.98" ;;
-    "web6.serv00.com") final_ip="128.204.223.100" ;;
-    "web7.serv00.com") final_ip="128.204.223.119" ;;
-    "web8.serv00.com") final_ip="128.204.223.113" ;;
-    "web9.serv00.com") final_ip="128.204.223.115" ;;
-    "web10.serv00.com") final_ip="128.204.223.111" ;;
-    "web11.serv00.com") final_ip="128.204.223.117" ;;
-    "web12.serv00.com") final_ip="85.194.246.69" ;;
-    "web13.serv00.com") final_ip="128.204.223.42" ;;
-    "web14.serv00.com") final_ip="188.68.240.160" ;;
-    "web15.serv00.com") final_ip="188.68.250.201" ;;
-    "web16.serv00.com") final_ip="207.180.248.6" ;;
-    "web17.serv00.com") final_ip="128.204.218.63" ;;
-    *) final_ip="Domain not found" ;;
+    "0.serv00.com") final_ips=("128.204.218.63" "91.185.187.49" "128.204.218.48") ;;
+    "1.serv00.com") final_ips=("213.189.54.126" "85.232.241.109" "31.186.83.254") ;;
+    "2.serv00.com") final_ips=("128.204.223.47" "31.186.86.47" "128.204.223.46") ;;
+    "3.serv00.com") final_ips=("128.204.223.71" "91.185.189.19" "128.204.223.70") ;;
+    "4.serv00.com") final_ips=("128.204.223.95" "213.189.52.181" "128.204.223.94") ;;
+    "5.serv00.com") final_ips=("128.204.223.99" "85.194.243.117" "128.204.223.98") ;;
+    "6.serv00.com") final_ips=("128.204.223.101" "85.194.242.89" "128.204.223.100") ;;
+    "7.serv00.com") final_ips=("128.204.223.120" "85.194.244.91" "128.204.223.119") ;;
+    "8.serv00.com") final_ips=("128.204.223.114" "31.186.85.171" "128.204.223.113") ;;
+    "9.serv00.com") final_ips=("128.204.223.116" "91.185.186.151" "128.204.223.115") ;;
+    "10.serv00.com") final_ips=("128.204.223.112" "91.185.190.159" "128.204.223.111") ;;
+    "11.serv00.com") final_ips=("128.204.223.118" "31.186.87.205" "128.204.223.117") ;;
+    "12.serv00.com") final_ips=("85.194.246.115" "213.189.53.91" "85.194.246.69") ;;
+    "13.serv00.com") final_ips=("128.204.223.43" "31.186.87.211" "128.204.223.42") ;;
+    "14.serv00.com") final_ips=("188.68.240.161" "188.68.234.53" "188.68.240.160") ;;
+    "15.serv00.com") final_ips=("188.68.250.202" "188.68.248.8" "188.68.250.201") ;;
+    "16.serv00.com") final_ips=("207.180.248.7" "213.136.83.240" "207.180.248.6") ;;
+    *) final_ips=("Domain not found") ;;
   esac
 
-  # 输出 IP 地址
-  echo "$final_ip"
+  # 输出 IP 地址数组
+  echo "${final_ips[@]}"
 }
 
 # 函数：生成私钥和证书
@@ -132,21 +131,25 @@ generate_random_ports () {
       # 添加端口并获取端口号
       add_port udp "hy2-${i}"
       hy2_port=$(devil port list | grep -E '^[0-9]+[[:space:]]+[a-zA-Z]+' | sed 's/^[[:space:]]*//' | grep -i hy2-${i} | awk '{print $1}')
-
-      # 生成 UUID
-      hy2_uuid=$(uuidgen -r)
-
       # 输出生成的结果
-      echo "生成第 $i 个节点: hy2-${i}"
-      echo "端口: ${hy2_port}, IP: ${hy2_ip}, UUID: ${hy2_uuid}"
-
-      # 同时生成订阅
-      hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}"
-
-      # 生成 JSON 配置
-      hy2_config=$(cat <<EOF
+      echo "生成第 $i 组节点: hy2-${i}"
+      # 获取 IP 地址
+      ips=($(get_ips))
+      count_num=0
+      for hy2_ip in "${ips[@]}"; do
+        echo "The IP address is $hy2_ip"
+        count_num=$((count_num+1))
+        # 生成 UUID
+        hy2_uuid=$(uuidgen -r)
+        # 输出生成的结果
+        echo "生成第 $count_num 个节点: hy2-${i}-${count_num}"
+        echo "端口: ${hy2_port}, IP: ${hy2_ip}, UUID: ${hy2_uuid}"
+        # 同时生成订阅
+        hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}-${count_num}"
+        # 生成 JSON 配置
+        hy2_config=$(cat <<EOF
 {
-    "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}",
+    "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}-${count_num}",
     "type": "hysteria2",
     "listen": "${hy2_ip}",
     "listen_port": ${hy2_port},
@@ -170,10 +173,10 @@ generate_random_ports () {
 }
 EOF
 )
-      # 存储节点配置
-      hy2_nodes+=("$hy2_config")
-      hy2_clients+=("$hy2_client")
-
+        # 存储节点配置
+        hy2_nodes+=("$hy2_config")
+        hy2_clients+=("$hy2_client")
+      done
     done
 }
 
@@ -409,10 +412,6 @@ killMe
 # 清理端口
 #clear_port
 
-# 获取 IP 地址
-hy2_ip=$(get_ip)
-echo "The IP address is $hy2_ip"
-
 # 创建私钥和证书
 make_pc $URL
 
@@ -428,7 +427,7 @@ if [ "$num_ports" -lt 3 ]; then
 else
     while true; do
         list_ports
-        read -p "请输入要删除的端口编号（输入y退出）： " num
+        read -p "当前可能有多个端口，你可以选择要删除的条目，请输入要删除的端口编号（输入y完成操作，ctrl+c退出脚本）： " num
         if [[ $num =~ ^[0-9]+$ ]]; then
             if delete_port "$num"; then
                 count=$((count+1))
