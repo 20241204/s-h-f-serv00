@@ -145,11 +145,11 @@ generate_random_ports () {
         echo "生成第 $count_num 个节点: hy2-${i}-${count_num}"
         echo "端口: ${hy2_port}, IP: ${hy2_ip}, UUID: ${hy2_uuid}"
         # 同时生成订阅
-        hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}-${count_num}"
+        hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#$(hostname | sed 's;.serv00.com;;g')-hy2-${i}-${count_num}"
         # 生成 JSON 配置
         hy2_config=$(cat <<EOF
 {
-    "tag": "hy2-in-$(hostname | sed 's;.serv00.com;;g')-${i}-${count_num}",
+    "tag": "$(hostname | sed 's;.serv00.com;;g')-hy2-${i}-${count_num}-in",
     "type": "hysteria2",
     "listen": "${hy2_ip}",
     "listen_port": ${hy2_port},
