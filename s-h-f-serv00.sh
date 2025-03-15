@@ -148,29 +148,29 @@ generate_random_ports () {
         hy2_client="hysteria2://${hy2_uuid}@${hy2_ip}:${hy2_port}?sni=${URL}&alpn=h3&insecure=1#$(hostname | sed 's;.serv00.com;;g')-hy2-${i}-${count_num}"
         # 生成 JSON 配置
         hy2_config=$(cat <<EOF
-{
-    "tag": "$(hostname | sed 's;.serv00.com;;g')-hy2-${i}-${count_num}-in",
-    "type": "hysteria2",
-    "listen": "${hy2_ip}",
-    "listen_port": ${hy2_port},
-    "users": [
     {
-        "password": "${hy2_uuid}"
+        "tag": "$(hostname | sed 's;.serv00.com;;g')-hy2-${i}-${count_num}-in",
+        "type": "hysteria2",
+        "listen": "${hy2_ip}",
+        "listen_port": ${hy2_port},
+        "users": [
+        {
+            "password": "${hy2_uuid}"
+        }
+        ],
+        "masquerade": {
+        "url": "https://${URL}",
+        "type": "proxy"
+        },
+        "tls": {
+        "enabled": true,
+        "alpn": [
+            "h3"
+        ],
+        "certificate_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/cert.pem",
+        "key_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/private.key"
+        }
     }
-    ],
-    "masquerade": {
-    "url": "https://${URL}",
-    "type": "proxy"
-    },
-    "tls": {
-    "enabled": true,
-    "alpn": [
-        "h3"
-    ],
-    "certificate_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/cert.pem",
-    "key_path": "${HOME}/s-h-f-serv00-${REPORT_DATE_S}/private.key"
-    }
-}
 EOF
 )
         # 存储节点配置
@@ -457,23 +457,9 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
   cat > config.json <<EOF
 {
   "log": {
-    "disabled": true,
-    "level": "debug",
+    "disabled": false,
+    "level": "info",
     "timestamp": true
-  },
-  "dns": {
-    "servers": [
-      {
-        "tag": "google",
-        "type": "tls",
-        "server": "8.8.8.8",
-        "detour": "direct"
-      }
-    ],
-    "final": "google",
-    "strategy": "",
-    "disable_cache": false,
-    "disable_expire": false
   },
   "inbounds": [
     ${inbounds}
@@ -483,20 +469,7 @@ inbounds_clients=$(printf "\n%s" "${hy2_clients[@]}")
       "type": "direct",
       "tag": "direct"
     }
-  ],
-  "route": {
-    "rules": [
-      {
-        "protocol": "dns",
-        "action": "hijack-dns"
-      },
-      {
-        "ip_is_private": true,
-        "outbound": "direct"
-      }
-    ],
-    "final": "direct"
-  }
+  ]
 }
 EOF
 
